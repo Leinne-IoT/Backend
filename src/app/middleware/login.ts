@@ -8,7 +8,7 @@ import {User} from "@prisma/client";
 export const initLoginMiddleware = (app: Express) => {
     app.use((req, res, next) => {
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        Logger.debug(`<${req.method} 접근> IP: ${ip}, 주소: ${req.path}`);
+        Logger.debug(`<${req.method} 요청> IP: ${ip}, path: ${req.path}`);
         if(['/', '/logout'].includes(req.path) || req.path.includes('login/') || req.path.includes('token/')){
             return next();
         }
@@ -36,11 +36,7 @@ export function verifyToken(token: string | undefined, secretKey: string): User 
 
 export function verifyWithRefresh(res: Response, accessToken: string, refreshToken?: string): User | undefined{
     let user = verifyToken(accessToken, JWT_SECRET_KEY);
-    if(!user && accessToken){
-        Logger.debug(`계정 취득 실패, access: ${accessToken ? '있음' : '없음'}, refresh: ${refreshToken ? '있음' : '없음'}`);
-    }
     if(!user && (user = verifyToken(refreshToken, JWT_REFRESH_SECRET_KEY))){
-        Logger.debug('액세스 토큰 만료, 리프레시 토큰으로 재발급 성공');
         generateToken(res, user);
     }
     return user;
