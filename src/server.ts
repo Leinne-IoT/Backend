@@ -16,7 +16,7 @@ export const scheduler = new Scheduler();
 
 (async () => {
     const app = createApp();
-    await WebPush.init(app);
+    await WebPush.init();
     app.get(/.*/, (_, res) => res.sendFile(join(__dirname, './public/index.html')));
 
     const port = process.env.PORT || 8080;
