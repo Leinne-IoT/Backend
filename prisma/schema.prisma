@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement()) @map("id") @db.UnsignedInt
+  username String @unique @map("username") @db.VarChar(20)
+  password String @map("password") @db.Text
+  nickname String @map("nickname") @db.Text
+}
+
+model Schedule {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  enable         Boolean  @default(true) // 스케줄러 ON/OFF
+  category       String   @db.VarChar(50) // 작업 카테고리
+  args           Json
+  actionTime     DateTime @map("action_time") @db.Timestamp // 실행 시간
+  excludeHoliday Boolean  @default(true) @map("exclude_holiday") // 공휴일 제외
+  recurrenceType String   @default("ONCE") @map("recurrence_type") // 반복 유형: 'ONCE' | 'WEEKLY'
+  recurrenceDays Json     @default("[]") @map("recurrence_days") // 반복 요일: 배열 형식(0~6)
+}
+
+model Holiday {
+  id    Int     @id @default(autoincrement()) @db.UnsignedInt
+  month Int     @db.UnsignedTinyInt
+  day   Int     @db.UnsignedTinyInt
+  range Int     @db.UnsignedTinyInt
+  lunar Boolean @default(false) // TINYINT(1) UNSIGNED treated as Boolean
+  name  String  @db.VarChar(20)
+}
+
+model Device {
+  id      String @id @db.VarChar(10)
+  name    String @db.Text
+  model   Int
+  battery Int?   @db.UnsignedTinyInt
+  extra   Json   @default("{}")
+
+  // 외래키
+  sensorHistory    SensorHistory[]
+  checkerHistory   CheckerHistory[]
+  switchBotHistory SwitchBotHistory[]
+}
+
+model CheckerHistory {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  deviceId   String   @map("device_id") @db.VarChar(10)
+  open       Boolean
+  battery    Int?     @db.UnsignedTinyInt
+  recordDate DateTime @default(now()) @map("record_date") @db.Timestamp
+
+  // 외래키
+  device Device @relation(fields: [deviceId], references: [id], onUpdate: Cascade)
+
+  @@map("checker_history") // 테이블 이름 매핑
+}
+
+model SensorHistory {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  deviceId    String   @map("device_id") @db.VarChar(10)
+  temperature Float    @default(0)
+  humidity    Float    @default(0)
+  recordDate  DateTime @default(now()) @map("record_date") @db.Timestamp
+
+  // 외래키
+  device Device @relation(fields: [deviceId], references: [id], onUpdate: Cascade)
+
+  @@map("sensor_history") // 테이블 이름 매핑
+}
+
+model SwitchBotHistory {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  deviceId   String   @map("device_id") @db.VarChar(10)
+  channel    Int      @default(0) @db.UnsignedTinyInt
+  state      Boolean  @default(false)
+  battery    Int?     @db.TinyInt
+  recordDate DateTime @default(now()) @map("record_date") @db.Timestamp
+
+  // 외래키
+  device Device @relation(fields: [deviceId], references: [id], onUpdate: Cascade)
+
+  @@map("switch_bot_history") // 테이블 이름 매핑
+}
+
+model WakeOnLan {
+  id      Int    @id @default(autoincrement()) @db.UnsignedInt
+  name    String @unique @db.VarChar(50)
+  address String @unique @db.VarChar(50)
+
+  @@unique([name], map: "name")
+  @@unique([address], map: "address")
+  @@map("wake_on_lan") // 테이블 이름 매핑
+}
