@@ -83,7 +83,9 @@ export class WebClient{
         WebClient.list.push(this);
         socket.addEventListener('close', () => {
             const index = WebClient.list.indexOf(this);
-            index >= 0 && WebClient.list.splice(index, 1);
+            if(index >= 0){
+                WebClient.list.splice(index, 1);
+            }
         })
     }
 }
