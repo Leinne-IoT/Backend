@@ -1,12 +1,11 @@
 import webPush, {PushSubscription} from "web-push";
-import {Express} from "express";
 import {readFile, writeFile} from "fs/promises";
 import {isObject} from "../../utils/utils.js";
 
 export class WebPush{
     private static readonly subscriptions: {[endpoint: string]: PushSubscription} = {};
 
-    static async init(app: Express): Promise<void>{
+    static async init(): Promise<void>{
         const email = process.env.WEB_PUSH_EMAIL;
         const publicKey = process.env.WEB_PUSH_PUBLIC_KEY;
         const privateKey = process.env.WEB_PUSH_PRIVATE_KEY;

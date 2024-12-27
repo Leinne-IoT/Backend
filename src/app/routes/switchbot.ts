@@ -1,6 +1,6 @@
 import {Express} from "express";
 import {Logger} from "../../logger/logger.js";
-import {isNumeric, isObject, JSONData} from "../../utils/utils.js";
+import {isNumeric, isObject} from "../../utils/utils.js";
 import {SwitchBot} from "../../device/switchbot.js";
 import {Device} from "../../device/device.js";
 import {prisma} from "../../server.js";

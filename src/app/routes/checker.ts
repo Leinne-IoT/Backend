@@ -1,5 +1,5 @@
 import {Express} from "express";
-import {isNumeric, JSONData} from "../../utils/utils.js";
+import {isNumeric} from "../../utils/utils.js";
 import {Device} from "../../device/device.js";
 import {Checker} from "../../device/checker.js";
 import {prisma} from "../../server.js";
