@@ -4,7 +4,7 @@ export const dateToString = (date: DateType, includeTime: boolean = false): stri
     date = typeof date !== 'object' ? new Date(date || 0) : date;
     let output = `${date.getFullYear()}-`;
     output += [
-        date.getMonth(),
+        date.getMonth() + 1,
         date.getDate()
     ].map(v => (v + '').padStart(2, '0')).join('-')
     if(includeTime){
