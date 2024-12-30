@@ -1,5 +1,5 @@
 import {Express} from "express";
-import {getActiveDevices} from "../../utils/wol.js";
+import {getActiveDevices, WakeOnLanPC} from "../../utils/wake_on_lan.js";
 import {isArray, isObject} from "../../utils/utils.js";
 import wol from "wake_on_lan";
 import {prisma} from "../../server.js";
@@ -10,7 +10,7 @@ export const initWakeOnLanRoutes = (app: Express) => {
         const wolList = await prisma.wakeOnLan.findMany();
         const activeDevices = await getActiveDevices();
 
-        const results = wolList.map(({id, name, address}) => {
+        const results: WakeOnLanPC[] = wolList.map(({id, name, address}) => {
             const connected = activeDevices.has(address.toLowerCase());
             return {id, name, address, connected};
         });

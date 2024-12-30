@@ -1,11 +1,9 @@
 import {exec} from "node:child_process";
 
-interface WakeOnLan{
+export interface WakeOnLanPC{
+    id: number;
     name: string;
     address: string;
-}
-
-interface PC extends WakeOnLan{
     connected: boolean;
 }
 
