@@ -51,7 +51,7 @@ export const initCheckerRoutes = (app: Express) => {
                 recordDate: true,
             },
             orderBy: {
-                recordDate: 'desc',
+                id: 'desc',
             },
         })).map((data: any) => {
             data.id = data.device.id;

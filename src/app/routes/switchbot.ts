@@ -61,7 +61,7 @@ export const initSwitchBotRoutes = (app: Express) => {
                 recordDate: true,
             },
             orderBy: {
-                recordDate: 'desc',
+                id: 'desc',
             },
         })).map((data) => {
             const extra: any = data.device.extra || {};
