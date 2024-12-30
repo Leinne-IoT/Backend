@@ -92,7 +92,13 @@ model WakeOnLan {
   name    String @unique @db.VarChar(50)
   address String @unique @db.VarChar(50)
 
-  @@unique([name], map: "name")
-  @@unique([address], map: "address")
   @@map("wake_on_lan") // 테이블 이름 매핑
+}
+
+model WebPush {
+  id       Int    @id @default(autoincrement())
+  endpoint String @unique
+  data     Json
+
+  @@map("web_push") // 테이블 이름 매핑
 }

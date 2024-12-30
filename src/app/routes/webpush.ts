@@ -15,11 +15,15 @@ export const initWebPushRoutes = (app: Express) => {
         res.sendStatus(200);
     });
     app.get('/notify/get-key', (_, res) => res.send(publicKey));
-    app.post('/notify/subscribe', (req, res) => {
-        if(!WebPush.subscribe(isObject(req.body) ? req.body : {})){
-            return res.status(400).json({error: 'Invalid subscription data'});
+    app.post('/notify/subscribe', async (req, res) => {
+        const pushData = isObject(req.body) ? req.body : {};
+        if(!await WebPush.subscribe(pushData)){
+            res.status(400).json({
+                error: 'Invalid subscription data',
+                message: ''
+            });
+        }else{
+            res.sendStatus(200);
         }
-        Logger.info('웹푸시 구독 요청을 승인 완료 했습니다.');
-        res.status(201).json({message: 'Subscription successful'});
     });
 }
