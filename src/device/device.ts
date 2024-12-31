@@ -3,6 +3,7 @@ import {JSONData} from "../utils/utils.js";
 import {Logger} from "../logger/logger.js";
 import {Device as DeviceModel} from '@prisma/client';
 import {prisma} from "../server.js";
+import {WebClient} from "../web/socket/client";
 
 export abstract class Device{
     static readonly MODEL_ID: number = 0x00;
@@ -78,7 +79,7 @@ export abstract class Device{
     }
 
     get connected(): boolean{
-        return (this._socket?.readyState || 3) <= WebSocket.OPEN && Date.now() - this._lastUpdate < 15000;
+        return !!this._socket && this._socket.readyState <= WebSocket.OPEN && Date.now() - this._lastUpdate < 15000;
     }
 
     get name(): string{
@@ -138,20 +139,13 @@ export abstract class Device{
         const now = Date.now();
         const reconnect = now - this.lastUpdate < 20000;
         this.lastUpdate = now;
+        WebClient.broadcastDeviceStatus(this);
         Logger.info(`${this.modelName}(${this.name})이(가) ${reconnect ? '다시 ' : ''}연결되었습니다.`);
         socket.on('ping', () => this.lastUpdate = Date.now());
-        socket.on('close', () => this.synchronize())
-        /*const types = socket.eventNames();
-        console.log(`------------ ${this.modelName}의 리스너 ------------`);
-        for(const type of types){
-            const listeners = socket.listeners(type);
-            console.log(`[Listener] ${type.toString()} START --------\n`);
-            listeners.forEach((listener, index) => {
-                console.log(`    ${index + 1}. ${listener.toString()}`);
-            });
-            console.log(`\n[Listener] ${type.toString()} FINISH --------`);
-        }
-        console.log(`-----------------------------\n\n`);*/
+        socket.on('close', () => {
+            this.synchronize();
+            WebClient.broadcastDeviceStatus(this);
+        });
     }
 
     synchronize(...columns: (keyof DeviceModel)[]){
@@ -179,7 +173,7 @@ export abstract class Device{
         return {
             id: this.id,
             name: this._name,
-            type: this.modelId,
+            model: this.modelId,
             battery: this._battery,
             connected: this.connected,
         }
