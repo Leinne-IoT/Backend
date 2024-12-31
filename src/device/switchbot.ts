@@ -56,7 +56,6 @@ export class SwitchBot extends Device{
         if(device.isOn(SwitchBot.CHANNEL_DOWN) !== down){
             device.syncDevice(SwitchBot.CHANNEL_DOWN);
         }
-        WebClient.broadcastDeviceStatus(device);
         return device;
     }
 
@@ -100,7 +99,7 @@ export class SwitchBot extends Device{
         const connected = this.connected;
         super.lastUpdate = value;
         if(connected !== this.connected){
-            WebClient.broadcastDeviceStatus(this);
+            WebClient.broadcastDevice(this);
         }
     }
 
@@ -124,7 +123,7 @@ export class SwitchBot extends Device{
             }
         }).then()
 
-        WebClient.broadcastSwitchBot(this);
+        WebClient.broadcastDevice(this);
         if(needSync){
             this.syncDevice(channel);
         }
