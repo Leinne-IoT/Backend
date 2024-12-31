@@ -36,28 +36,19 @@ export class WebClient{
     static broadcastDevice(device: Device): void{
         const output = JSON.stringify({device});
         for(const client of WebClient.list){
-            if(client.checker){
-                client.socket.send(output);
-            }
+            client.socket.send(output);
         }
     }
 
     static broadcastTemperature(humidity: number, temperature: number): void{
         const output = JSON.stringify({humidity, temperature});
         for(const client of WebClient.list){
-            if(client.temperature){
-                client.socket.send(output);
-            }
+            client.socket.send(output);
         }
     }
 
-    public checker: boolean = true;
-    public switchBot: boolean = true;
-    public temperature: boolean = true;
 
-    private constructor(
-        private readonly socket: WebSocket
-    ){
+    private constructor(private readonly socket: WebSocket){
         WebClient.list.push(this);
         socket.addEventListener('close', () => {
             const index = WebClient.list.indexOf(this);
