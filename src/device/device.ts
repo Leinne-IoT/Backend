@@ -139,12 +139,12 @@ export abstract class Device{
         const now = Date.now();
         const reconnect = now - this.lastUpdate < 20000;
         this.lastUpdate = now;
-        WebClient.broadcastDeviceStatus(this);
+        WebClient.broadcastDevice(this);
         Logger.info(`${this.modelName}(${this.name})이(가) ${reconnect ? '다시 ' : ''}연결되었습니다.`);
         socket.on('ping', () => this.lastUpdate = Date.now());
         socket.on('close', () => {
             this.synchronize();
-            WebClient.broadcastDeviceStatus(this);
+            WebClient.broadcastDevice(this);
         });
     }
 

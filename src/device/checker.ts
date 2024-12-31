@@ -108,7 +108,7 @@ export class Checker extends Device{
         this.synchronize('extra')
         this.lastUpdate = date.getTime();
 
-        WebClient.broadcastChecker(this);
+        WebClient.broadcastDevice(this);
         const hour = date.getHours();
         const minute = date.getMinutes();
         const prefixText = hour >= 12 ? '오후' : '오전';

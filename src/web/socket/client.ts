@@ -33,32 +33,10 @@ export class WebClient{
         return true;
     }
 
-    static broadcastDeviceStatus(device: Device): void{
-        const output = JSON.stringify({
-            device: {
-                id: device.id,
-                model: device.modelId,
-                connected: device.connected
-            }
-        });
-        for(const client of WebClient.list){
-            client.socket.send(output);
-        }
-    }
-
-    static broadcastChecker(checker: Checker): void{
-        const output = JSON.stringify({checker});
+    static broadcastDevice(device: Device): void{
+        const output = JSON.stringify({device});
         for(const client of WebClient.list){
             if(client.checker){
-                client.socket.send(output);
-            }
-        }
-    }
-
-    static broadcastSwitchBot(switchBot: SwitchBot): void{
-        const output = JSON.stringify({switchBot});
-        for(const client of WebClient.list){
-            if(client.switchBot){
                 client.socket.send(output);
             }
         }
