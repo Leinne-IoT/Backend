@@ -7,13 +7,13 @@ import {RemoteBot} from "./remotebot.js";
 import {prisma} from "../server.js";
 
 export class DeviceFactory{
-    protected static readonly typeList: Record<string, typeof Device> = {};
+    protected static readonly modelList: Record<string, typeof Device> = {};
 
     static register<T extends typeof Device>(value: T): void{
-        if(this.typeList[value.MODEL_ID]){
+        if(this.modelList[value.MODEL_ID]){
             throw new Error(`해당 번호(id: ${value.MODEL_ID})는 이미 등록되어있습니다`);
         }
-        this.typeList[value.MODEL_ID] = value;
+        this.modelList[value.MODEL_ID] = value;
     }
 
     static async init(): Promise<void>{
@@ -32,7 +32,7 @@ export class DeviceFactory{
     }
 
     static create(model: number, ...args: any[]): Device{
-        const DeviceClass = this.typeList[model];
+        const DeviceClass = this.modelList[model];
         if(!DeviceClass){
             throw new Error(`Device type '${model}' is not registered.`);
         }
@@ -40,7 +40,7 @@ export class DeviceFactory{
     }
 
     static validateConnect(typeId: number, socket: WebSocket, data: Buffer): void{
-        const DeviceClass = this.typeList[typeId];
+        const DeviceClass = this.modelList[typeId];
         if(typeof DeviceClass !== 'function'){
             return;
         }
