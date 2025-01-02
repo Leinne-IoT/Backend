@@ -53,7 +53,10 @@ export class Holiday{
             while(checkHoliday <= endDate){
                 const month = checkHoliday.getMonth();
                 const day = checkHoliday.getDate();
-                if(checkHoliday.getDay() === 0 || this.calendar[month].has(day)){ // 휴일 혹은 일요일이 겹치는 경우 1일 추가
+                if(checkHoliday.getDay() === 6){ // 토요일에 있는 경우는 휴일취급, 1일 추가
+                    this.calendar[month].add(day);
+                    endDate.setDate(endDate.getDate() + 1);
+                }else if(checkHoliday.getDay() === 0 || this.calendar[month].has(day)){ // 휴일 혹은 일요일이 겹치는 경우 1일 추가
                     endDate.setDate(endDate.getDate() + 1);
                 }else{
                     this.calendar[month].add(day);
