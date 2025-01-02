@@ -1,8 +1,5 @@
 import {WebSocket} from 'ws';
-import {Checker} from '../../device/checker.js';
-import {SwitchBot} from '../../device/switch_bot.js';
 import {JSONData} from '../../utils/utils.js'
-import {RemoteBot} from '../../device/remote_bot.js';
 import {JWT_REFRESH_SECRET_KEY, JWT_SECRET_KEY} from '../../app/routes/login.js';
 import {verifyToken} from "../../app/middleware/login.js";
 import {iotServer} from "../../server";
