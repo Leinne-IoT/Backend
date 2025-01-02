@@ -42,7 +42,9 @@ export const initWebSocketServer = (httpServer: http.Server<any, any>) => {
                         socket.removeListener('message', listener);
                         return;
                     }
-                }catch{}
+                }catch(error: any){
+                    console.error(error);
+                }
             }
             socket.close(1002); // protocol error
             console.error(data);
