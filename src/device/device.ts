@@ -2,14 +2,13 @@ import {WebSocket} from "ws";
 import {JSONData} from "../utils/utils.js";
 import {Logger} from "../logger/logger.js";
 import {Device as DeviceModel} from '@prisma/client';
-import {prisma} from "../server.js";
+// import {WebClient} from "../web/socket/client";
+import {iotServer} from "../server";
 import {WebClient} from "../web/socket/client";
 
 export abstract class Device{
     static readonly MODEL_ID: number = 0x00;
     static readonly MODEL_NAME: string = '';
-
-    protected static readonly list: {[id: string]: Device} = {};
 
     static isValidDeviceId(id: string): boolean{
         return id.length > 5 && id.match(/^[a-zA-Z]{5}_\d{4}$/) !== null;
@@ -21,50 +20,17 @@ export abstract class Device{
         }
     }
 
-    static getAll(): Device[]{
-        return Object.values(this.list);
-    }
-
-    static exists(id: string): boolean{
-        return !!this.list[id];
-    }
-
-    static get(data: string | WebSocket): Device | undefined{
-        if(typeof data === 'string'){
-            return this.list[data];
-        }
-        for(const id in this.list){
-            const device = this.list[id];
-            if(device.socket === data){
-                return device;
-            }
-        }
-    }
-
-    static connectDevice(...args: any[]): Device{
-        throw new Error("connectDevice() must be implemented in subclasses");
-    }
-
-    static create(...args: any[]): Device{
-        throw new Error("create() must be implemented in subclasses");
-    }
-
-    public readonly id: string;
     protected _socket?: WebSocket;
+
     private _lastUpdate: number = -1;
 
     protected constructor(
-        id: string,
+        public readonly id: string,
         private _name: string,
         protected _battery: number | null,
         protected readonly extra: JSONData = {},
     ){
         Device.assertValidDeviceId(id);
-        if(Device.list[id]){
-            throw new Error(`An error occurred while creating the device. The device (id: ${id}) is already registered.`)
-        }
-        this.id = id;
-        Device.list[this.id] = this;
     }
 
     abstract get modelId(): number;
@@ -88,14 +54,7 @@ export abstract class Device{
 
     set name(value: string){
         this._name = value;
-        prisma.device.update({
-            where: {
-                id: this.id
-            },
-            data: {
-                name: this.name,
-            }
-        });
+        this.synchronize('name');
     }
 
     get battery(): number | null{
@@ -110,14 +69,7 @@ export abstract class Device{
         }
         if(this._battery !== battery){
             this._battery = battery;
-            prisma.device.update({
-                where: {
-                    id: this.id
-                },
-                data: {
-                    battery: this._battery,
-                }
-            });
+            this.synchronize('battery');
         }
     }
 
@@ -125,27 +77,33 @@ export abstract class Device{
         return this._socket;
     }
 
-    set socket(socket: WebSocket){
-        if(socket === this._socket){
-            return;
+    protected set socket(socket: WebSocket){
+        this._socket = socket;
+    }
+
+    reconnect(socket: WebSocket, battery: number | null, extra: JSONData): boolean{
+        if(socket === this.socket){
+            return false;
         }
 
-        const before = this._socket;
-        this._socket = socket;
+        const before = this.socket;
+        this.socket = socket;
         if(before && before.readyState <= WebSocket.OPEN){
             before.close();
         }
+        this.socket = socket;
+        this.battery = battery;
 
-        const now = Date.now();
-        const reconnect = now - this.lastUpdate < 20000;
-        this.lastUpdate = now;
-        WebClient.broadcastDevice(this);
-        Logger.info(`${this.modelName}(${this.name})이(가) ${reconnect ? '다시 ' : ''}연결되었습니다.`);
+        this.lastUpdate = Date.now();
+        WebClient.broadcast({device: this});
+        Logger.info(`${this.modelName}(${this.name})이(가) 연결되었습니다.`);
         socket.on('ping', () => this.lastUpdate = Date.now());
         socket.on('close', () => {
             this.synchronize();
-            WebClient.broadcastDevice(this);
+            WebClient.broadcast({device: this});
+            Logger.info(`${this.modelName}(${this.name})의 연결이 종료되었습니다.`);
         });
+        return true;
     }
 
     synchronize(...columns: (keyof DeviceModel)[]){
@@ -166,7 +124,17 @@ export abstract class Device{
                     break;
             }
         });
-        prisma.device.update({where:{id: this.id}, data}).then()
+        iotServer.prisma.device.upsert({
+            where:{id: this.id},
+            update: data,
+            create: {
+                id: this.id,
+                name: this._name,
+                model: this.modelId,
+                battery: this._battery,
+                extra: this.extra
+            }
+        }).then()
     }
 
     toJSON(): JSONData{

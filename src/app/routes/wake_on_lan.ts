@@ -1,11 +1,12 @@
-import {Express} from "express";
 import {getActiveDevices, WakeOnLanPC} from "../../utils/wake_on_lan.js";
 import {isArray, isObject} from "../../utils/utils.js";
 import wol from "wake_on_lan";
-import {prisma} from "../../server.js";
 import {Logger} from "../../logger/logger.js";
+import {iotServer} from "../../server";
 
-export const initWakeOnLanRoutes = (app: Express) => {
+export const initWakeOnLanRoutes = () => {
+    const app = iotServer.express;
+    const prisma = iotServer.prisma;
     app.post('/data/wol', async (_, res) => {
         const wolList = await prisma.wakeOnLan.findMany();
         const activeDevices = await getActiveDevices();

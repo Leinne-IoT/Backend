@@ -1,9 +1,9 @@
-import {Express} from "express";
 import {isObject} from "../../utils/utils.js";
-import {Logger} from "../../logger/logger.js";
-import {WebPush} from "../../web/notify/webpush.js";
+import {WebPush} from "../../web/notify/web_push.js";
+import {iotServer} from "../../server";
 
-export const initWebPushRoutes = (app: Express) => {
+export const initWebPushRoutes = () => {
+    const app = iotServer.express;
     const publicKey = process.env.WEB_PUSH_PUBLIC_KEY;
     const privateKey = process.env.WEB_PUSH_PRIVATE_KEY;
     if(!publicKey || !privateKey){

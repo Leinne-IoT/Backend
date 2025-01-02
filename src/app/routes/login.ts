@@ -1,11 +1,12 @@
-import {Express} from 'express';
 import {comparePassword, generateToken, hashPassword, verifyToken, verifyWithRefresh} from "../middleware/login.js";
-import {prisma} from "../../server.js";
+import {iotServer} from "../../server";
 
 export const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY!;
 export const JWT_REFRESH_SECRET_KEY = process.env.JWT_REFRESH_SECRET_KEY!;
 
-export const initLoginRoutes = (app: Express) => {
+export const initLoginRoutes = () => {
+    const app = iotServer.express;
+    const prisma = iotServer.prisma;
     app.post('/token/verify', async (req, res) => {
         const accessToken = req.cookies.accessToken;
         if(accessToken){

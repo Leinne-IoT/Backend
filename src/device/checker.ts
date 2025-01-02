@@ -4,51 +4,14 @@ import {Logger} from '../logger/logger.js';
 import {WebSocket} from 'ws';
 import {isDate} from "../utils/date.js";
 import {WebClient} from "../web/socket/client.js";
-import {WebPush} from "../web/notify/webpush.js";
-import {prisma} from "../server.js";
+import {WebPush} from "../web/notify/web_push.js";
+import {iotServer} from "../server";
 
 export class Checker extends Device{
     static readonly MODEL_ID: number = 0x01;
     static readonly MODEL_NAME: string = '체커';
 
-    private static readonly checkerList: {[id: string]: Checker} = {}
-
-    static get(id: string): Checker | undefined{
-        return this.checkerList[id];
-    }
-
-    static getAll(): Checker[]{
-        return Object.values(this.checkerList);
-    }
-
-    static connectDevice(socket: WebSocket, data: Buffer): Checker{
-        const id = data.toString('utf-8', 3).replace(/\0/g, '').trim();
-        Device.assertValidDeviceId(id);
-
-        const battery = (data[2] & 0b1111) * 10;
-        const device = (() => {
-            if(!this.list[id]){
-                const newChecker = this.create(id, id, battery);
-                prisma.device.create({
-                    data: {
-                        id,
-                        name: id,
-                        model: this.MODEL_ID,
-                        battery: battery,
-                        extra: newChecker.extra
-                    }
-                })
-                return newChecker;
-            }
-            return this.list[id] as Checker;
-        })();
-        device.socket = socket;
-        device.battery = battery;
-        device.setOpenState(!!((data[2] >> 4) & 0b1111));
-        return device;
-    }
-
-    static create(id: string, name: string, battery: number | null = 100, extra: JSONData = {}): Checker{
+    constructor(id: string, name: string, battery: number | null, extra: JSONData = {}){
         let date: any = extra.recordDate;
         if(date == null){
             date = new Date(0);
@@ -57,12 +20,27 @@ export class Checker extends Device{
         }
         extra.recordDate = isDate(date) ? date : new Date(0);
         extra.open ??= true;
+        super(id, name, battery, extra);
+    }
 
-        const checker = new Checker(id, name, battery, extra);
-        if(id){
-            Checker.checkerList[id] = checker;
+    reconnect(socket: WebSocket, battery: number | null, extra: JSONData): boolean{
+        if(super.reconnect(socket, battery, extra)){
+            this.setOpenState(extra.open);
+            socket.on('message', (data: Buffer) => {
+                if(data[0] === 0x02){
+                    this.battery = (data[1] & 0b1111) * 10;
+                    const date = new Date();
+                    let realTime = date.getTime();
+                    for(let byte = 0; byte < 4; ++byte){
+                        realTime -= lshift(data[2 + byte], 8 * (3 - byte));
+                    }
+                    date.setTime(realTime);
+                    this.setOpenState(!!((data[1] >> 4) & 0b1111), date);
+                }
+            });
+            return true;
         }
-        return checker;
+        return false;
     }
 
     get modelId(): number{
@@ -81,22 +59,6 @@ export class Checker extends Device{
         return this.extra.recordDate;
     }
 
-    set socket(socket: WebSocket){
-        super.socket = socket;
-        socket.on('message', (data: Buffer) => {
-            if(data[0] === 0x02){
-                this.battery = (data[1] & 0b1111) * 10;
-                const date = new Date();
-                let realTime = date.getTime();
-                for(let byte = 0; byte < 4; ++byte){
-                    realTime -= lshift(data[2 + byte], 8 * (3 - byte));
-                }
-                date.setTime(realTime);
-                this.setOpenState(!!((data[1] >> 4) & 0b1111), date);
-            }
-        });
-    }
-
     private setOpenState(value: boolean, date?: Date){
         if(this.extra.open == value){
             return;
@@ -108,7 +70,7 @@ export class Checker extends Device{
         this.synchronize('extra')
         this.lastUpdate = date.getTime();
 
-        WebClient.broadcastDevice(this);
+        WebClient.broadcast({device: this});
         const hour = date.getHours();
         const minute = date.getMinutes();
         const prefixText = hour >= 12 ? '오후' : '오전';
@@ -117,7 +79,7 @@ export class Checker extends Device{
             `${value ? "열린" : "닫힌"} 시각: ${prefixText} ${hour % 12 || 12}:${minute > 9 ? minute : '0' + minute}, 배터리: ${this._battery}%`,
             value ? "door_open.png" : "door_close.png"
         ).then();
-        prisma.checkerHistory.create({
+        iotServer.prisma.checkerHistory.create({
             data: {
                 deviceId: this.id,
                 open: value,

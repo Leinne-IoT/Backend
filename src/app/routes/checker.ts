@@ -1,12 +1,12 @@
-import {Express} from "express";
 import {isNumeric} from "../../utils/utils.js";
-import {Device} from "../../device/device.js";
 import {Checker} from "../../device/checker.js";
-import {prisma} from "../../server.js";
+import {iotServer} from "../../server";
 
-export const initCheckerRoutes = (app: Express) => {
+export const initCheckerRoutes = () => {
+    const app = iotServer.express;
+    const prisma = iotServer.prisma;
     app.post('/checker', (_, res) => {
-        res.status(200).json(Checker.getAll());
+        res.status(200).json(iotServer.deviceManager.getAllByType(Checker));
     });
 
     app.get('/checker/history', async (req, res) => {
@@ -30,7 +30,7 @@ export const initCheckerRoutes = (app: Express) => {
         let where = {};
         if(req.query.device_id != null){
             const deviceId = req.query.device_id + '';
-            if(Device.exists(deviceId)){
+            if(iotServer.deviceManager.exists(deviceId)){
                 where = {deviceId}
             }else{
                 res.status(400).json({

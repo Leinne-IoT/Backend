@@ -1,14 +1,14 @@
-import {Express} from "express";
 import {Logger} from "../../logger/logger.js";
 import {isNumeric, isObject} from "../../utils/utils.js";
-import {SwitchBot} from "../../device/switchbot.js";
-import {Device} from "../../device/device.js";
-import {prisma} from "../../server.js";
+import {SwitchBot} from "../../device/switch_bot.js";
+import {iotServer} from "../../server";
 
-export const initSwitchBotRoutes = (app: Express) => {
+export const initSwitchBotRoutes = () => {
+    const app = iotServer.express;
+    const prisma = iotServer.prisma;
     // 스위치 정보
     app.post('/switch_bot', (_, res) => {
-        res.status(200).json(SwitchBot.getAll());
+        res.status(200).json(iotServer.deviceManager.getAllByType(SwitchBot));
     });
 
     /*const query =
@@ -39,7 +39,7 @@ export const initSwitchBotRoutes = (app: Express) => {
         let where = {};
         if(req.query.device_id != null){
             const deviceId = req.query.device_id + '';
-            if(Device.exists(deviceId)){
+            if(iotServer.deviceManager.exists(deviceId)){
                 where = {deviceId}
             }else{
                 res.status(400).json({
@@ -82,8 +82,8 @@ export const initSwitchBotRoutes = (app: Express) => {
 
     // 스위치 API 호출
     app.post('/api/switch', (req, res) => {
-        const device = SwitchBot.get(req.body.id);
-        if(!device){
+        const device = iotServer.deviceManager.get(req.body.id);
+        if(!(device instanceof SwitchBot)){
             Logger.error(`등록되지 않은 기기에 대한 요청을 받았습니다. (id: ${req.body.id})`);
             res.status(400).json({
                 error: 'Invalid device id',

@@ -3,45 +3,14 @@ import {JSONData} from '../utils/utils.js';
 import {Logger} from '../logger/logger.js';
 import {WebSocket} from 'ws';
 import {WebClient} from "../web/socket/client.js";
-import {prisma} from "../server.js";
+import {iotServer} from "../server";
 
 export class RemoteBot extends Device{
     static readonly MODEL_ID: number = 0x03;
     static readonly MODEL_NAME: string = '리모트 봇';
 
-    private static readonly remoteBotList: {[id: string]: RemoteBot} = {}
-
-    static get(id: string): RemoteBot | undefined{
-        return this.remoteBotList[id];
-    }
-
-    static getAll(): RemoteBot[]{
-        return Object.values(this.remoteBotList);
-    }
-
-    static connectDevice(socket: WebSocket, data: Buffer): RemoteBot{
-        const id = data.toString('utf-8', 2).trim().replace(/\0/g, '');
-        Device.assertValidDeviceId(id);
-
-        const device = (() => {
-            if(!this.remoteBotList[id]){
-                prisma.device.create({
-                    data: {
-                        id,
-                        name: id,
-                        model: this.MODEL_ID,
-                    }
-                })
-                return new RemoteBot(id, id);
-            }
-            return this.remoteBotList[id];
-        })();
-        device.socket = socket;
-        return device;
-    }
-
     static get humidityAverage(): number{
-        const list = this.getAll();
+        const list = iotServer.deviceManager.getAllByType(RemoteBot);
         if(list.length < 1){
             return 0;
         }
@@ -57,7 +26,7 @@ export class RemoteBot extends Device{
     }
 
     static get temperatureAverage(): number{
-        const list = this.getAll();
+        const list = iotServer.deviceManager.getAllByType(RemoteBot);
         if(list.length < 1){
             return 0;
         }
@@ -72,22 +41,10 @@ export class RemoteBot extends Device{
         return temperature / length;
     }
 
-    static create(id: string, name: string, battery: number | null = 100, extra: JSONData = {}): RemoteBot{
+    constructor(id: string, name: string, _: any = null, extra: JSONData = {}){
         delete extra['humidity'];
         delete extra['temperature'];
-        const remoteBot = new RemoteBot(id, name, battery, extra);
-        if(id){
-            RemoteBot.remoteBotList[id] = remoteBot;
-        }
-        return remoteBot;
-    }
-
-    constructor(id: string, name: string, _: any = null, extra: JSONData = {}){
         super(id, name, null, extra);
-        if(!this.id){
-            return;
-        }
-        RemoteBot.remoteBotList[id] = this;
     }
 
     get modelId(): number{
@@ -140,9 +97,9 @@ export class RemoteBot extends Device{
         }
         this.extra.humidity = humidity;
         this.extra.temperature = temperature;
-        WebClient.broadcastTemperature(humidity, temperature);
+        WebClient.broadcast({humidity, temperature});
         this.synchronize('extra')
-        prisma.sensorHistory.create({
+        iotServer.prisma.sensorHistory.create({
             data: {
                 deviceId: this.id,
                 humidity,

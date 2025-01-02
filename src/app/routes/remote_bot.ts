@@ -1,9 +1,10 @@
-import {Express} from "express";
-import {RemoteBot} from "../../device/remotebot.js";
+import {RemoteBot} from "../../device/remote_bot.js";
 import {JSONData} from "../../utils/utils.js";
-import {prisma} from "../../server.js";
+import {iotServer} from "../../server";
 
-export const initRemoteBotRoutes = (app: Express) => {
+export const initRemoteBotRoutes = () => {
+    const app = iotServer.express;
+    const prisma = iotServer.prisma;
     app.post('/api/remote', (req, res) => {
         res.sendStatus(200);
         /*const type = (() => {
@@ -34,7 +35,7 @@ export const initRemoteBotRoutes = (app: Express) => {
             data.push(req.body.temperature); // 온도
             data.push(req.body.speed); // 풍속, `stdAc::fanspeed_t` 참고
         }
-        for(const device of RemoteBot.getAll()){
+        for(const device of iotServer.deviceManager.getAllByType(RemoteBot)){
             device.socket?.send(data);
         }
     });

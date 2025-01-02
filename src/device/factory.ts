@@ -1,51 +1,85 @@
-import {WebSocket} from "ws";
-import {Logger} from "../logger/logger.js";
 import {Device} from "./device.js";
 import {Checker} from "./checker.js";
-import {SwitchBot} from "./switchbot.js";
-import {RemoteBot} from "./remotebot.js";
-import {prisma} from "../server.js";
+import {SwitchBot} from "./switch_bot.js";
+import {RemoteBot} from "./remote_bot.js";
+import {JSONData} from "../utils/utils";
+import {iotServer} from "../server";
+
+export interface InitData{
+    modelId: number;
+    deviceId: string;
+    battery: number | null;
+    extra: JSONData;
+}
 
 export class DeviceFactory{
-    protected static readonly modelList: Record<string, typeof Device> = {};
-
-    static register<T extends typeof Device>(value: T): void{
-        if(this.modelList[value.MODEL_ID]){
-            throw new Error(`해당 번호(id: ${value.MODEL_ID})는 이미 등록되어있습니다`);
-        }
-        this.modelList[value.MODEL_ID] = value;
-    }
-
     static async init(): Promise<void>{
-        this.register(Checker);
-        this.register(SwitchBot);
-        this.register(RemoteBot);
-
-        const deviceList = await prisma.device.findMany();
+        const deviceList = await iotServer.prisma.device.findMany();
         for(const device of deviceList){
             try{
-                this.create(device.model, device.id, device.name, device.battery, device.extra);
+                const deviceObject = this.create(device.model, device.id, device.name, device.battery, device.extra as JSONData);
+                iotServer.deviceManager.add(deviceObject);
             }catch(error: any){
                 console.error(error);
             }
         }
     }
 
-    static create(model: number, ...args: any[]): Device{
-        const DeviceClass = this.modelList[model];
-        if(!DeviceClass){
-            throw new Error(`Device type '${model}' is not registered.`);
+    static create(model: number, id: string, name: string, battery: number | null, extra: JSONData, createData: boolean = false): Device{
+        let DeviceClass;
+        switch(model){
+            case Checker.MODEL_ID:
+                DeviceClass = Checker;
+                name = name || Checker.MODEL_NAME;
+                break;
+            case SwitchBot.MODEL_ID:
+                DeviceClass = SwitchBot;
+                name = name || SwitchBot.MODEL_NAME;
+                break;
+            case RemoteBot.MODEL_ID:
+                DeviceClass = RemoteBot;
+                name = name || RemoteBot.MODEL_NAME;
+                break;
+            default:
+                throw new Error('Invalid device model id')
         }
-        return DeviceClass.create(...args);
+        const object = new DeviceClass(id, name, battery, extra);
+        if(createData){
+            object.synchronize();
+            iotServer.deviceManager.add(object);
+        }
+        return object;
     }
 
-    static validateConnect(typeId: number, socket: WebSocket, data: Buffer): void{
-        const DeviceClass = this.modelList[typeId];
-        if(typeof DeviceClass !== 'function'){
-            return;
+    static convertDeviceInitData(data: Buffer): InitData{
+        const modelId = +data[1];
+        let deviceId: string = '';
+        let battery: number | null = null;
+        let extra: JSONData = {};
+        if(data[0] === 0x01){ // init protocol id
+            switch(modelId){
+                case Checker.MODEL_ID:
+                    deviceId = data.toString('utf-8', 3).replace(/\0/g, '').trim();
+                    battery = (data[2] & 0b1111) * 10;
+                    extra = {
+                        open: ((data[2] >> 4) & 0b1111) > 0,
+                    };
+                    break;
+                case SwitchBot.MODEL_ID:
+                    deviceId = data.toString('utf-8', 3).trim().replace(/\0/g, '').trim();
+                    battery = (data[2] & 0b1111) * 10;
+                    extra = {
+                        switch: [((data[2] >> 6) & 0b11) > 0, ((data[2] >> 4) & 0b11) > 0],
+                    }
+                    break;
+                case RemoteBot.MODEL_ID:
+                    deviceId = data.toString('utf-8', 2).trim().replace(/\0/g, '').trim();
+                    break;
+                default:
+                    throw new Error('Invalid device model id');
+            }
+            Device.assertValidDeviceId(deviceId);
         }
-        const device = DeviceClass.connectDevice(socket, data);
-        socket.send(device.id);
-        socket.on('close', () => device.socket === socket && Logger.info(`${device.modelName}(id: ${device.id})의 연결이 해제되었습니다.`));
+        return {modelId, deviceId, battery, extra};
     }
 }

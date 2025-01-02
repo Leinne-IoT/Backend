@@ -1,11 +1,11 @@
 import {WebSocket} from 'ws';
 import {Checker} from '../../device/checker.js';
-import {Device} from '../../device/device.js';
-import {SwitchBot} from '../../device/switchbot.js';
+import {SwitchBot} from '../../device/switch_bot.js';
 import {JSONData} from '../../utils/utils.js'
-import {RemoteBot} from '../../device/remotebot.js';
+import {RemoteBot} from '../../device/remote_bot.js';
 import {JWT_REFRESH_SECRET_KEY, JWT_SECRET_KEY} from '../../app/routes/login.js';
 import {verifyToken} from "../../app/middleware/login.js";
+import {iotServer} from "../../server";
 
 export class WebClient{
     static readonly list: WebClient[] = [];
@@ -23,38 +23,24 @@ export class WebClient{
             return true;
         }
 
-        new WebClient(socket);
-        socket.send(JSON.stringify({
-            humidity: RemoteBot.humidityAverage,
-            temperature: RemoteBot.temperatureAverage,
-            checkerList: Checker.getAll(),
-            switchBotList: SwitchBot.getAll(),
-        }));
-        return true;
-    }
-
-    static broadcastDevice(device: Device): void{
-        const output = JSON.stringify({device});
-        for(const client of WebClient.list){
-            client.socket.send(output);
-        }
-    }
-
-    static broadcastTemperature(humidity: number, temperature: number): void{
-        const output = JSON.stringify({humidity, temperature});
-        for(const client of WebClient.list){
-            client.socket.send(output);
-        }
-    }
-
-
-    private constructor(private readonly socket: WebSocket){
-        WebClient.list.push(this);
+        const client = new WebClient(socket);
+        this.list.push(client);
         socket.addEventListener('close', () => {
-            const index = WebClient.list.indexOf(this);
+            const index = WebClient.list.indexOf(client);
             if(index >= 0){
                 WebClient.list.splice(index, 1);
             }
         })
+        socket.send(JSON.stringify(iotServer.deviceManager.getWebInitData()));
+        return true;
     }
+
+    static broadcast(jsonData: any): void{
+        const output = JSON.stringify(jsonData);
+        for(const client of WebClient.list){
+            client.socket.send(output);
+        }
+    }
+
+    private constructor(private readonly socket: WebSocket){}
 }

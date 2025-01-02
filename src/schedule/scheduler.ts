@@ -1,11 +1,12 @@
 import {Job, scheduleJob} from 'node-schedule';
 import {PrismaClient} from '@prisma/client';
-import {SwitchBot} from '../device/switchbot.js';
+import {SwitchBot} from '../device/switch_bot.js';
 import {Logger} from '../logger/logger.js';
 import {isArray, isNumeric, isObject} from "../utils/utils.js";
 import {Device} from "../device/device.js";
-import {RemoteBot} from "../device/remotebot.js";
+import {RemoteBot} from "../device/remote_bot.js";
 import {Holiday} from "../utils/holiday.js";
+import {iotServer} from "../server";
 
 const prisma = new PrismaClient();
 
@@ -205,8 +206,8 @@ export class Scheduler{
                     return;
                 }
 
-                const switchBot = SwitchBot.get(deviceId);
-                if(!switchBot){
+                const switchBot = iotServer.deviceManager.get(deviceId);
+                if(!(switchBot instanceof SwitchBot)){
                     Logger.error(`기기 id 값이 잘못되었습니다. [id: ${deviceId}]`);
                     return;
                 }
@@ -215,10 +216,11 @@ export class Scheduler{
             }
             case 'remote':{
                 const {deviceId} = scheduleData.args;
-                const remoteBot = RemoteBot.get(deviceId);
-                if(!remoteBot){
+                const remoteBot = iotServer.deviceManager.get(deviceId);
+                if(!(remoteBot instanceof RemoteBot)){
                     Logger.error(`기기 id 값이 잘못되었습니다. [id: ${deviceId}]`);
                 }
+                // TODO: 에어컨 예약기능 등등...
                 break;
             }
             default:

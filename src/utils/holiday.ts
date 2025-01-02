@@ -1,4 +1,4 @@
-import {prisma} from "../server.js";
+import {iotServer} from "../server";
 import KoreanLunarCalendar from "korean-lunar-calendar";
 
 export class Holiday{
@@ -14,7 +14,7 @@ export class Holiday{
         this.calendar = Array.from({length: 12}, () => new Set<number>());
 
         const processedHolidays = [];
-        const holidays = await prisma.holiday.findMany();
+        const holidays = await iotServer.prisma.holiday.findMany();
         for(const holiday of holidays){
             let year = currentYear;
             let month = holiday.month;

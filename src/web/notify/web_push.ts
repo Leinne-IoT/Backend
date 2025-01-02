@@ -8,6 +8,16 @@ const prisma = new PrismaClient();
 export class WebPush{
     private static readonly subscriptions: {[endpoint: string]: PushSubscription} = {};
 
+    static validateData(data: any): boolean{
+        if(!isObject(data.keys)){
+            return false;
+        }
+        if(data.endpoint == null || !isObject(data.keys)){
+            return false;
+        }
+        return data.keys.p256dh && data.keys.auth;
+    }
+
     static async init(): Promise<void>{
         const email = process.env.WEB_PUSH_EMAIL;
         const publicKey = process.env.WEB_PUSH_PUBLIC_KEY;
@@ -25,16 +35,6 @@ export class WebPush{
                 this.subscriptions[sub.endpoint] = subData;
             }
         });
-    }
-
-    static validateData(data: any): boolean{
-        if(!isObject(data.keys)){
-            return false;
-        }
-        if(data.endpoint == null || !isObject(data.keys)){
-            return false;
-        }
-        return data.keys.p256dh && data.keys.auth;
     }
 
     static isSubscribed(endpoint: string): boolean{
