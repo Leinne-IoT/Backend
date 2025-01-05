@@ -1,9 +1,6 @@
 import {Device} from "./device";
 import {WebSocket} from "ws";
 import {JSONData} from "../utils/utils";
-import {RemoteBot} from "./remote_bot";
-import {Checker} from "./checker";
-import {SwitchBot} from "./switch_bot";
 
 export class DeviceManager{
     private list: Record<string, Device> = {};
@@ -37,14 +34,5 @@ export class DeviceManager{
 
     getAllByType<T extends Device>(type: new(...args: any[]) => T): T[]{
         return Object.values(this.list).filter(v => v instanceof type) as T[];
-    }
-
-    getWebInitData(): JSONData{
-        return {
-            humidity: RemoteBot.humidityAverage,
-            temperature: RemoteBot.temperatureAverage,
-            checkerList: this.getAllByType(Checker),
-            switchBotList: this.getAllByType(SwitchBot),
-        }
     }
 }

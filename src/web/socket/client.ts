@@ -28,7 +28,9 @@ export class WebClient{
                 WebClient.list.splice(index, 1);
             }
         })
-        socket.send(JSON.stringify(iotServer.deviceManager.getWebInitData()));
+        socket.send(JSON.stringify({
+            deviceList: iotServer.deviceManager.getAll()
+        }));
         return true;
     }
 
