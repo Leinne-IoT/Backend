@@ -1,6 +1,5 @@
 import {Device} from "./device";
 import {WebSocket} from "ws";
-import {JSONData} from "../utils/utils";
 
 export class DeviceManager{
     private list: Record<string, Device> = {};
