@@ -60,7 +60,7 @@ export const initCheckerRoutes = () => {
         });
         res.status(200).json({
             data: checkerHistoryData,
-            totalPages: Math.ceil(await prisma.checkerHistory.count() / size)
+            totalPages: Math.ceil(await prisma.checkerHistory.count({where}) / size)
         });
     });
 }

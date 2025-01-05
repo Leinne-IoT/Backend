@@ -76,7 +76,7 @@ export const initSwitchBotRoutes = () => {
         });
         res.status(200).json({
             data: switchBotHistoryData,
-            totalPages: Math.ceil(await prisma.switchBotHistory.count() / size)
+            totalPages: Math.ceil(await prisma.switchBotHistory.count({where}) / size)
         });
     });
 
