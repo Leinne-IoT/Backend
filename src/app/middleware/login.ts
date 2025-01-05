@@ -57,10 +57,14 @@ export function verifyWithRefresh(res: Response, accessToken: string, refreshTok
     if(!user && (user = verifyToken(refreshToken, JWT_REFRESH_SECRET_KEY))){
         generateToken(res, user);
     }
+    if(user?.password){
+        user['password'] = '';
+    }
     return user;
 }
 
 export function generateToken(res: Response, user: User): void{
+    user['password'] = '';
     res.cookie(
         'accessToken',
         jwt.sign({user}, JWT_SECRET_KEY, {expiresIn: '30m'}),

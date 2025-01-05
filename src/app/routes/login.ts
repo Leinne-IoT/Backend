@@ -1,4 +1,4 @@
-import {comparePassword, generateToken, hashPassword, verifyToken, verifyWithRefresh} from "../middleware/login.js";
+import {comparePassword, generateToken, verifyToken, verifyWithRefresh} from "../middleware/login.js";
 import {iotServer} from "../../server";
 
 export const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY!;
@@ -46,9 +46,5 @@ export const initLoginRoutes = () => {
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
         res.redirect('/');
-    });
-    app.get('/hash', async (req, res) => {
-        const password: string = req.query.value + '';
-        res.send(await hashPassword(password));
     });
 }

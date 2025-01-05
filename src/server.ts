@@ -63,5 +63,6 @@ class IoTServer{
         });
     }
 }
+
 export const iotServer = new IoTServer();
 iotServer.start().then()
