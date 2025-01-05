@@ -97,7 +97,7 @@ export class RemoteBot extends Device{
         }
         this.extra.humidity = humidity;
         this.extra.temperature = temperature;
-        WebClient.broadcast({humidity, temperature});
+        WebClient.broadcast({device: this});
         this.synchronize('extra')
         iotServer.prisma.sensorHistory.create({
             data: {
